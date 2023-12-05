@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/fabmade/cert-manager-webhook-ionos/ionos"
-	"github.com/jetstack/cert-manager/pkg/acme/webhook/cmd"
 	"os"
+
+	"github.com/cert-manager/cert-manager/pkg/acme/webhook/cmd"
+	"github.com/fabmade/cert-manager-webhook-ionos/ionos"
 )
 
 var GroupName = os.Getenv("GROUP_NAME")

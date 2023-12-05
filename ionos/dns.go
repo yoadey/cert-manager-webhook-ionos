@@ -2,7 +2,9 @@ package ionos
 
 import (
 	"fmt"
+
 	"github.com/miekg/dns"
+	"k8s.io/klog/v2"
 )
 
 func (e *ionosSolver) handleDNSRequest(w dns.ResponseWriter, req *dns.Msg) {
@@ -17,7 +19,10 @@ func (e *ionosSolver) handleDNSRequest(w dns.ResponseWriter, req *dns.Msg) {
 			}
 		}
 	}
-	w.WriteMsg(msg)
+	err := w.WriteMsg(msg)
+	if err != nil {
+		klog.Errorf("failed to write message: %v", err)
+	}
 }
 
 func (e *ionosSolver) addDNSAnswer(q dns.Question, msg *dns.Msg, req *dns.Msg) error {

@@ -35,7 +35,7 @@ func (e *MockClient) GetZoneIdByName(ctx context.Context, name string) (string, 
 
 func (e *MockClient) GetRecordIdByName(ctx context.Context, zoneId string, recordName string) (string, error) {
 
-	for key, _ := range e.txtRecords {
+	for key := range e.txtRecords {
 		if key == recordName+"."+zoneId {
 			return key, nil
 		}

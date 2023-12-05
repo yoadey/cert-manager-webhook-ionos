@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"k8s.io/klog"
 	"net/http"
+
+	"k8s.io/klog/v2"
 )
 
 type Client interface {
@@ -93,13 +93,13 @@ func (e *IonosClient) callDNSApi(url string, method string, body io.Reader, conf
 		}
 	}()
 
-	respBody, _ := ioutil.ReadAll(resp.Body)
+	respBody, _ := io.ReadAll(io.Reader(resp.Body))
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
 		return respBody, nil
 	}
 
 	text := "Error calling API status:" + resp.Status + " url: " + url + " method: " + method
-	klog.Error(text)
+	klog.Error(text, respBody)
 	return nil, errors.New(text)
 }
 
