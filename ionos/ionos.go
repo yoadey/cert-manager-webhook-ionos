@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
+	ionoscloud "github.com/ionos-cloud/sdk-go-dns"
 	corev1 "k8s.io/api/core/v1"
 	extapi "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,7 +43,7 @@ type Config struct {
 
 type ionosSolver struct {
 	context     context.Context
-	ionosClient Client
+	ionosClient *ionoscloud.APIClient
 	client      *kubernetes.Clientset
 	name        string
 	server      *dns.Server
@@ -128,7 +129,7 @@ func (e *ionosSolver) clientInit(ch *acme.ChallengeRequest) (Config, error) {
 	}
 	config.ApiKey = publicKey + "." + secretKey
 
-	e.ionosClient.SetConfig(e.context, &config)
+	e.ionosClient = ionoscloud.NewAPIClient(ionoscloud.NewConfiguration("", "", config.ApiKey, config.ApiUrl))
 
 	// Get ZoneName by api search if not provided by config
 	if config.ZoneName == "" {
@@ -147,7 +148,8 @@ func (e *ionosSolver) searchZoneName(searchZone string) (string, error) {
 	parts = parts[:len(parts)-1]
 	for i := 0; i <= len(parts)-2; i++ {
 		name := strings.Join(parts[i:], ".")
-		zoneId, _ := e.ionosClient.GetZoneIdByName(e.context, name)
+		zoneId, _ := e.GetZoneIdByName(e.context, name)
+
 		if zoneId != "" {
 			klog.Infof("Found ID with ZoneName: %s", name)
 			return name, nil
@@ -171,7 +173,7 @@ func (e *ionosSolver) getSecret(selector corev1.SecretKeySelector, namespace str
 
 func (e *ionosSolver) removeTxtRecord(zoneName string, ch *acme.ChallengeRequest) error {
 
-	zoneId, err := e.ionosClient.GetZoneIdByName(e.context, zoneName)
+	zoneId, err := e.GetZoneIdByName(e.context, zoneName)
 
 	if err != nil {
 		return fmt.Errorf("unable to find id for zone name `%s`; %v", zoneName, err)
@@ -179,16 +181,14 @@ func (e *ionosSolver) removeTxtRecord(zoneName string, ch *acme.ChallengeRequest
 
 	name := util.UnFqdn(ch.ResolvedFQDN)
 
-	//url := config.ApiUrl + "/zones/" + zoneId + "?recordName=" + name + "&recordType=TXT"
-
-	recordId, err := e.ionosClient.GetRecordIdByName(e.context, zoneId, name)
+	recordId, err := e.GetRecordIdByName(e.context, zoneId, name)
 
 	if err != nil {
 		klog.Errorf("unable to get DNS records %v", err)
 		return fmt.Errorf("unable to get DNS records %v", err)
 	}
 
-	err = e.ionosClient.DeleteRecord(e.context, zoneId, recordId)
+	_, err = e.ionosClient.RecordsApi.ZonesRecordsDelete(e.context, zoneId, recordId).Execute()
 
 	if err != nil {
 		return fmt.Errorf("unable to delete record with id `%s`; %v", recordId, err)
@@ -201,22 +201,11 @@ func (e *ionosSolver) addTxtRecord(zoneName string, ch *acme.ChallengeRequest) {
 
 	name := util.UnFqdn(ch.ResolvedFQDN)
 	content := ch.Key
-	zoneId, err := e.ionosClient.GetZoneIdByName(e.context, zoneName)
+	zoneId, err := e.GetZoneIdByName(e.context, zoneName)
 
-	if err != nil {
-		klog.Errorf("unable to find id for zone name `%s`; %v", zoneName, err)
-	}
+	record := ionoscloud.NewRecordCreate(*ionoscloud.NewRecord(name, "TXT", content))
 
-	request := RecordCreateRequest{}
-	request = append(request, RecordCreate{
-		Name:     name,
-		Type:     "TXT",
-		Content:  content,
-		Ttl:      120,
-		Disabled: false,
-	})
-
-	err = e.ionosClient.AddRecord(e.context, zoneId, request)
+	_, _, err = e.ionosClient.RecordsApi.ZonesRecordsPost(e.context, zoneId).RecordCreate(*record).Execute()
 
 	if err != nil {
 		klog.Error(err)
@@ -241,21 +230,6 @@ func New() webhook.Solver {
 	return &ionosSolver{
 		context:     context.Background(),
 		name:        "ionos",
-		ionosClient: NewClient(),
+		ionosClient: nil,
 	}
-}
-
-func NewMock(port string) webhook.Solver {
-	e := &ionosSolver{
-		context:     context.Background(),
-		name:        "ionos",
-		ionosClient: NewMockClient(),
-	}
-
-	e.server = &dns.Server{
-		Addr:    ":" + port,
-		Net:     "udp",
-		Handler: dns.HandlerFunc(e.handleDNSRequest),
-	}
-	return e
 }
