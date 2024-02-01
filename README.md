@@ -13,7 +13,7 @@ see: https://cert-manager.io/docs/installation/kubernetes/
 
 Add helm repo
 
-`helm repo add cert-manager-webhook-ionos https://fabmade.github.io/cert-manager-webhook-ionos`
+`helm repo add cert-manager-webhook-ionos https://yoadey.github.io/cert-manager-webhook-ionos`
 
 install helm chart
 
@@ -53,15 +53,12 @@ spec:
     solvers:
       - dns01:
           webhook:
-            groupName: acme.fabmade.de
+            groupName: acme.yoadey.de
             solverName: ionos
             config:
-              apiUrl: https://api.hosting.ionos.com/dns/v1
-              publicKeySecretRef:
-                key: IONOS_PUBLIC_PREFIX
-                name: ionos-secret
-              secretKeySecretRef:
-                key: IONOS_SECRET
+              endpoint: https://dns.de-fra.ionos.com
+              apiTokenSecretRef:
+                key: apiToken
                 name: ionos-secret
 ```
 add prod issuer
@@ -84,15 +81,12 @@ spec:
     solvers:
       - dns01:
           webhook:
-            groupName: acme.fabmade.de
+            groupName: acme.yoadey.de
             solverName: ionos
             config:
-              apiUrl: https://api.hosting.ionos.com/dns/v1
-              publicKeySecretRef:
-                key: IONOS_PUBLIC_PREFIX
-                name: ionos-secret
-              secretKeySecretRef:
-                key: IONOS_SECRET
+              endpoint: https://dns.de-fra.ionos.com
+              apiTokenSecretRef:
+                key: apiToken
                 name: ionos-secret
 ```
 

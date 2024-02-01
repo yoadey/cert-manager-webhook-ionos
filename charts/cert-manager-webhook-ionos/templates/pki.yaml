@@ -13,9 +13,7 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   selfSigned: {}
-
 ---
-
 # Generate a CA Certificate used to sign certificates for the webhook
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -29,12 +27,11 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   secretName: {{ include "cert-manager-webhook-ionos.rootCACertificate" . }}
-  duration: 43800h0m0s # 5y
+  duration: 43800h # 5y
   issuerRef:
     name: {{ include "cert-manager-webhook-ionos.selfSignedIssuer" . }}
   commonName: "ca.cert-manager-webhook-ionos.cert-manager"
   isCA: true
-
 ---
 
 # Create an Issuer that uses the above generated CA certificate to issue certs
@@ -67,7 +64,7 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   secretName: {{ include "cert-manager-webhook-ionos.servingCertificate" . }}
-  duration: 8760h0m0s # 1y
+  duration: 8760h # 1y
   issuerRef:
     name: {{ include "cert-manager-webhook-ionos.rootCAIssuer" . }}
   dnsNames:
