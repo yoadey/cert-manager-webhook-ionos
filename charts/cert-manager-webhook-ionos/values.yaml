@@ -12,6 +12,11 @@ certManager:
   namespace: cert-manager
   serviceAccountName: cert-manager
 
+webhookIonos:
+#  apiTokenSecret:
+#    name: ionos-api-token-secret
+#    key: api-token
+
 image:
   repository: ghcr.io/yoadey/cert-manager-webhook-ionos
   # tag: master

@@ -2,7 +2,6 @@ package ionos
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -22,11 +21,14 @@ import (
 // To do so, it must implement the `github.com/cert-manager/cert-manager/pkg/acme/webhook.Solver`
 // interface.
 type ionosDNSProviderSolver struct {
-	client *kubernetes.Clientset
+	client   *kubernetes.Clientset
+	apiToken string
 }
 
-func NewIonosDNSProviderSeolver() *ionosDNSProviderSolver {
-	return &ionosDNSProviderSolver{}
+func NewIonosDNSProviderSeolver(apiToken string) *ionosDNSProviderSolver {
+	return &ionosDNSProviderSolver{
+		apiToken: apiToken,
+	}
 }
 
 // ionosDNSProviderConfig is a structure that is used to decode into when
@@ -62,38 +64,25 @@ func (s *ionosDNSProviderSolver) Name() string {
 	return "ionos"
 }
 
-func (s *ionosDNSProviderSolver) validate(cfg *ionosDNSProviderConfig, allowAmbientCredentials bool) error {
-	if allowAmbientCredentials {
-		// When allowAmbientCredentials is true, ionos client can load missing config
-		// values from the environment variables and the ionos.conf files.
-		return nil
-	}
-	if cfg.Endpoint == "" {
-		return errors.New("no endpoint provided in ionos config")
-	}
-	if cfg.ApiTokenSecretRef.Name == "" {
-		return errors.New("no api token secret provided in ionos config")
-	}
-	return nil
-}
-
 func (s *ionosDNSProviderSolver) ionosClient(ch *v1alpha1.ChallengeRequest) (*ionos.APIClient, error) {
 	cfg, err := loadConfig(ch.Config)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.validate(&cfg, ch.AllowAmbientCredentials)
-	if err != nil {
-		return nil, err
+	endpoint := cfg.Endpoint
+
+	var apiToken string
+	if cfg.ApiTokenSecretRef.Name != "" {
+		apiToken, err = s.secret(cfg.ApiTokenSecretRef, ch.ResourceNamespace)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		apiToken = s.apiToken
 	}
 
-	apiToken, err := s.secret(cfg.ApiTokenSecretRef, ch.ResourceNamespace)
-	if err != nil {
-		return nil, err
-	}
-
-	client := ionos.NewAPIClient(ionos.NewConfiguration("", "", apiToken, cfg.Endpoint))
+	client := ionos.NewAPIClient(ionos.NewConfiguration("", "", apiToken, endpoint))
 
 	return client, nil
 }

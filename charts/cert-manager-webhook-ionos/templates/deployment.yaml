@@ -35,6 +35,13 @@ spec:
           env:
             - name: GROUP_NAME
               value: {{ .Values.groupName | quote }}
+          {{- if and .Values.webhookIonos (hasKey .Values.webhookIonos "apiTokenSecret") }}
+            - name: API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.webhookIonos.apiTokenSecret.name | quote }}
+                  key: {{ .Values.webhookIonos.apiTokenSecret.key | quote }}
+          {{- end }}
           ports:
             - name: https
               containerPort: 443

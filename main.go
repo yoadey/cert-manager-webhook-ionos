@@ -8,6 +8,7 @@ import (
 )
 
 var GroupName = os.Getenv("GROUP_NAME")
+var ApiToken = os.Getenv("API_TOKEN")
 
 func main() {
 	if GroupName == "" {
@@ -20,6 +21,6 @@ func main() {
 	// webhook, where the Name() method will be used to disambiguate between
 	// the different implementations.
 	cmd.RunWebhookServer(GroupName,
-		ionos.NewIonosDNSProviderSeolver(),
+		ionos.NewIonosDNSProviderSeolver(ApiToken),
 	)
 }
