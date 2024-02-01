@@ -1,6 +1,9 @@
 # Ionos webhook for cert manager
 
-Cert-manager ACME DNS webhook provider for ionos.
+Cert-manager ACME DNS webhook provider for ionos cloud API.
+
+> :warn: This provider is not suitable for the ionos DNS API at https://developer.hosting.ionos.com/docs/dns, but only for the one at https://api.ionos.com/docs/dns/v1/
+
 see: https://cert-manager.io/docs/configuration/acme/dns01/webhook/
 
 ## Install
